@@ -1,11 +1,12 @@
 {
   "name": "@aelesia/http",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Simplified wrapper for HTTP calls",
   "author": "aelesia",
   "license": "MIT",
-  "main": "dist/Http.js",
-  "types": "dist/Http.d.ts",
+  "repository": "https://github.com/aelesia/npm-http",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "prepublish": "tsc"
   },
