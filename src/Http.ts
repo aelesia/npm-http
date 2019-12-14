@@ -139,7 +139,7 @@ export default class Http {
 	auth_basic(username: string, password: string): Http {
 		let http = this.clone()
 		http._auth_type = Auth.BASIC
-		const hash = new Buffer(username + ':' + password).toString('base64')
+		const hash = Buffer.from(username + ':' + password).toString('base64')
 		return http.header(H.Authorization, `Basic ${hash}`)
 		// TODO: Doesn't conform
 	}
