@@ -1,11 +1,13 @@
 import axios, {AxiosInstance, AxiosPromise} from 'axios'
 import qs from 'querystring'
+import {OAuth2Token} from './Token'
 
 enum Auth {
 	NONE,
 	BASIC,
 	BEARER,
-	AWS
+	AWS,
+	OAUTH2_PASSWORD,
 }
 
 enum Body {
@@ -13,6 +15,7 @@ enum Body {
 	FORM,
 	JSON
 }
+
 
 export enum H {
 	Cookie = 'Cookie',
@@ -144,6 +147,12 @@ export default class Http {
 		http._auth_type = Auth.BEARER
 		return http.header(H.Authorization, `Bearer ${token}`)
 		// TODO: Doesn't conform
+	}
+
+	auth_oauth2_password(token: OAuth2Token): Http {
+		let http = this.clone()
+		http._auth_type = Auth.OAUTH2_PASSWORD
+		return http.header(H.Authorization, `Bearer ${token.access_token()}`)
 	}
 
 	get<Resp>(): AxiosPromise<Resp> {
