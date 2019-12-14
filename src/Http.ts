@@ -1,4 +1,4 @@
-import axios, {AxiosInstance, AxiosPromise, AxiosResponse} from 'axios'
+import axios, {AxiosError, AxiosInstance, AxiosPromise, AxiosResponse} from 'axios'
 import qs from 'querystring'
 import {OAuth2Token} from './Token'
 
@@ -158,31 +158,30 @@ export default class Http {
 		return http
 	}
 
-	get<Resp>(): AxiosPromise<Resp> {
-		if (this._body_type != Body.NONE) {
-			throw Error('Body is not allowed for GET')
-		}
+	// get<Resp>(): AxiosPromise<Resp> {
+	// 	if (this._body_type != Body.NONE) {
+	// 		throw Error('Body is not allowed for GET')
+	// 	}
+	//
+	// 	return myaxios.get(this._url,
+	// 		{ params: this._params, headers: this._headers })
+	// }
 
-		return myaxios.get(this._url,
-			{ params: this._params, headers: this._headers })
-	}
-
-	async get2<Resp>(): Promise<AxiosResponse<Resp>> {
+	async get<Resp>(): Promise<AxiosResponse<Resp>> {
 		let http = this.clone()
 		if (http._body_type != Body.NONE) {
 			throw Error('Body is not allowed for GET')
 		}
-
 		if (http._oauth_token) {
 			http = http.auth_bearer(await http._oauth_token.async_access_token())
 		}
 
-		let a = (await myaxios.get<Resp>(http._url,
-			{ params: http._params, headers: http._headers }))
-		return a
+		return myaxios.get<Resp>(http._url,
+			{ params: http._params, headers: http._headers })
 	}
 
-	post<Resp>(): AxiosPromise<Resp> {
+	async post<Resp>(): Promise<AxiosResponse<Resp>> {
+		let http = this.clone()
 		let body
 		switch(this._body_type) {
 			case Body.FORM:
@@ -195,9 +194,13 @@ export default class Http {
 				break
 		}
 
-		return myaxios.post(this._url,
+		if (http._oauth_token) {
+			http = http.auth_bearer(await http._oauth_token.async_access_token())
+		}
+
+		return myaxios.post(http._url,
 			body,
-			{ headers: this._headers })
+			{ headers: http._headers })
 	}
 
 	static before(func: (config: any)=>any) {
