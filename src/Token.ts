@@ -1,5 +1,6 @@
 import Http from './Http'
 import {Time} from './Time'
+import {rethrow} from './Control';
 
 type Token = {
 	access_token:  string;
@@ -42,10 +43,16 @@ export class OAuth2Token{
 			})
 			.post<Token>())
 			.data
+
+		if (!data.access_token || !data.token_type || !data.expires_in) {
+			throw Error(`Invalid token - ${JSON.stringify(data)}`)
+		}
+
 		this.token = {...data, ...{expires_on: Time.add(data.expires_in)}}
 
 	} catch(e) {
-		throw Error('Unable to retrieve OAuth2Token. Please check your credentials')
+		//@ts-ignore
+		rethrow(new Error('Unable to obtain O2A token'), e)
 	}}
 
 	async async_access_token(): Promise<string> {

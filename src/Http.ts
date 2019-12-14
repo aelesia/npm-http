@@ -1,4 +1,4 @@
-import axios, {AxiosInstance, AxiosPromise} from 'axios'
+import axios, {AxiosInstance, AxiosPromise, AxiosResponse} from 'axios'
 import qs from 'querystring'
 import {OAuth2Token} from './Token'
 
@@ -34,6 +34,7 @@ export default class Http {
 
 	private _auth_type: Auth = Auth.NONE
 	private _body_type: Body = Body.NONE
+	private _oauth_token: OAuth2Token | null = null
 	public axios: AxiosInstance = myaxios
 
 	private constructor(url: string) {
@@ -55,6 +56,7 @@ export default class Http {
 		http._body = this._body
 		http._auth_type = this._auth_type
 		http._body_type = this._body_type
+		http._oauth_token = this._oauth_token
 		http.axios = this.axios
 		return http
 	}
@@ -152,7 +154,8 @@ export default class Http {
 	auth_oauth2_password(token: OAuth2Token): Http {
 		let http = this.clone()
 		http._auth_type = Auth.OAUTH2_PASSWORD
-		return http.header(H.Authorization, `Bearer ${token.access_token()}`)
+		http._oauth_token = token
+		return http
 	}
 
 	get<Resp>(): AxiosPromise<Resp> {
@@ -162,6 +165,21 @@ export default class Http {
 
 		return myaxios.get(this._url,
 			{ params: this._params, headers: this._headers })
+	}
+
+	async get2<Resp>(): Promise<AxiosResponse<Resp>> {
+		let http = this.clone()
+		if (http._body_type != Body.NONE) {
+			throw Error('Body is not allowed for GET')
+		}
+
+		if (http._oauth_token) {
+			http = http.auth_bearer(await http._oauth_token.async_access_token())
+		}
+
+		let a = (await myaxios.get<Resp>(http._url,
+			{ params: http._params, headers: http._headers }))
+		return a
 	}
 
 	post<Resp>(): AxiosPromise<Resp> {
