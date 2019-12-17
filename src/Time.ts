@@ -7,6 +7,7 @@ export class Time {
 		return new Date().getTime()/1000
 	}
 
+	// TODO: Make this thing automatically convert time format please
 	static date(epoch: number): Date {
 		return new Date(epoch*1000)
 	}
@@ -29,7 +30,7 @@ export class Time {
 	}
 
 	static add(seconds: number): Date {
-		return this.date(new Date().getTime() + seconds*1000)
+		return new Date(new Date().getTime() + seconds*1000)
 	}
 
 	static is_after(date: Date): boolean {
