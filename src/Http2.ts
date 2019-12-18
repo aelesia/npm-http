@@ -26,13 +26,14 @@ export enum H {
 }
 
 type Request = {
-	_body: object
-	_headers: object
-	_params: object
-	_url: string
-	_auth_type: Auth
-	_body_type: Body
-	_oauth_token: OAuth2Token | null
+	body: object
+	headers: object
+	params: object
+	url: string
+	path: string
+	auth_type: Auth
+	body_type: Body
+	oauth_token: OAuth2Token | null
 }
 
 const myaxios = axios.create()
@@ -46,139 +47,146 @@ export default class Http {
 			this.config = config
 		} else {
 			this.config = {
-				_url: '',
-				_body: {},
-				_params: {},
-				_headers: {},
+				url: '',
+				path: '',
+				body: {},
+				params: {},
+				headers: {},
 
-				_auth_type: Auth.NONE,
-				_body_type: Body.NONE,
-				_oauth_token: null,
+				auth_type: Auth.NONE,
+				body_type: Body.NONE,
+				oauth_token: null,
 			}
 		}
 	}
 
 	url(url: string): Http {
 		let config = {...this.config}
-		config._url = url
+		config.url = url
+		return new Http(config)
+	}
+
+	path(url: string): Http {
+		let config = {...this.config}
+		config.url = url
 		return new Http(config)
 	}
 
 	header(key: H | string, value: string): Http {
 		let config = {...this.config}
-		config._headers = {...{}, ...this.config._headers, ...{[key]:value}}
+		config.headers = {...{}, ...this.config.headers, ...{[key]:value}}
 		return new Http(config)
 	}
 
 	headers(headers: object): Http {
 		let config = {...this.config}
-		config._headers = {...{}, ...this.config._headers, ...headers}
+		config.headers = {...{}, ...this.config.headers, ...headers}
 		return new Http(config)
 	}
 
 	param(key: string, value: string): Http {
 		let config = {...this.config}
-		config._params = {...{}, ...this.config._params, ...{[key]:value}}
+		config.params = {...{}, ...this.config.params, ...{[key]:value}}
 		return new Http(config)
 	}
 
 	params<Form extends object>(params: Form): Http {
 		let config = {...this.config}
-		config._params = {...{}, ...this.config._params, ...params}
+		config.params = {...{}, ...this.config.params, ...params}
 		return new Http(config)
 	}
 
 	body_form(key: string, value: string): Http {
 		let config = {...this.config}
-		config._body_type = Body.FORM
-		config._headers = Object.assign(this.config._headers, {[H.ContentType]:'application/x-www-form-urlencoded'})
-		config._body = Object.assign(this.config._body, {[key]:value})
+		config.body_type = Body.FORM
+		config.headers = Object.assign(this.config.headers, {[H.ContentType]:'application/x-www-form-urlencoded'})
+		config.body = Object.assign(this.config.body, {[key]:value})
 		return new Http(config)
 	}
 
 	body_forms<Form extends object>(body: Form): Http {
 		let config = {...this.config}
-		config._body_type = Body.FORM
-		config._headers = Object.assign(this.config._headers, {[H.ContentType]:'application/x-www-form-urlencoded'})
-		config._body = Object.assign(this.config._body, body)
+		config.body_type = Body.FORM
+		config.headers = Object.assign(this.config.headers, {[H.ContentType]:'application/x-www-form-urlencoded'})
+		config.body = Object.assign(this.config.body, body)
 		return new Http(config)
 	}
 
 	body_json_(key: string, value: string): Http {
 		let config = {...this.config}
-		config._body_type = Body.JSON
+		config.body_type = Body.JSON
 		// config._headers =
 		throw new Error('Not Implemented Yet')
-		config._body = Object.assign(this.config._body, {[key]:value})
+		config.body = Object.assign(this.config.body, {[key]:value})
 		return new Http(config)
 	}
 
 	body_json<Form extends object>(body: Form): Http {
 		let config = {...this.config}
-		config._body_type = Body.JSON
+		config.body_type = Body.JSON
 		// config._headers =
 		throw new Error('Not Implemented Yet')
-		config._body = Object.assign(this.config._body, body)
+		config.body = Object.assign(this.config.body, body)
 		return new Http(config)
 	}
 
 	auth_basic(username: string, password: string): Http {
 		let config = {...this.config}
-		config._auth_type = Auth.BASIC
+		config.auth_type = Auth.BASIC
 		const hash = Buffer.from(username + ':' + password).toString('base64')
-		config._headers = Object.assign(this.config._headers, {[H.Authorization]: `Basic ${hash}`})
+		config.headers = Object.assign(this.config.headers, {[H.Authorization]: `Basic ${hash}`})
 		return new Http(config)
 	}
 
 	auth_bearer(token: string): Http {
 		let config = {...this.config}
-		config._auth_type = Auth.BEARER
-		config._headers = Object.assign(this.config._headers, {[H.Authorization]: `Bearer ${token}`})
+		config.auth_type = Auth.BEARER
+		config.headers = Object.assign(this.config.headers, {[H.Authorization]: `Bearer ${token}`})
 		return new Http(config)
 	}
 
 	auth_oauth2_password(token: OAuth2Token): Http {
 		let config = {...this.config}
-		config._auth_type = Auth.OAUTH2_PASSWORD
-		config._oauth_token = token
+		config.auth_type = Auth.OAUTH2_PASSWORD
+		config.oauth_token = token
 		return new Http(config)
 	}
 
 	async get<Resp>(): Promise<AxiosResponse<Resp>> {
 		let config = {...this.config}
-		if (config._body_type != Body.NONE) {
+		if (config.body_type != Body.NONE) {
 			throw Error('Body is not allowed for GET')
 		}
-		if (config._oauth_token) {
-			let token = await config._oauth_token.async_access_token()
-			config._headers = Object.assign(this.config._headers, {[H.Authorization]: `Bearer ${token}`})
+		if (config.oauth_token) {
+			let token = await config.oauth_token.async_access_token()
+			config.headers = Object.assign(this.config.headers, {[H.Authorization]: `Bearer ${token}`})
 		}
 
-		return myaxios.get<Resp>(config._url,
-			{ params: config._params, headers: config._headers })
+		return myaxios.get<Resp>(config.url,
+			{ params: config.params, headers: config.headers })
 	}
 
 	async post<Resp>(): Promise<AxiosResponse<Resp>> {
 		let config = {...this.config}
 		let body
-		switch(config._body_type) {
+		switch(config.body_type) {
 			case Body.FORM:
 				// @ts-ignore
-				body = qs.stringify(config._body)
+				body = qs.stringify(config.body)
 				break
-			case Body.JSON: body = config._body
+			case Body.JSON: body = config.body
 				break
 			case Body.NONE: body = {}
 				break
 		}
-		if (config._oauth_token) {
-			let token = await config._oauth_token.async_access_token()
-			config._headers = Object.assign(this.config._headers, {[H.Authorization]: `Bearer ${token}`})
+		if (config.oauth_token) {
+			let token = await config.oauth_token.async_access_token()
+			config.headers = Object.assign(this.config.headers, {[H.Authorization]: `Bearer ${token}`})
 		}
 
-		return myaxios.post(config._url,
+		return myaxios.post(config.url,
 			body,
-			{ headers: config._headers })
+			{ headers: config.headers })
 	}
 }
 
