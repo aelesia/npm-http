@@ -22,7 +22,8 @@ enum Body {
 export enum H {
 	Cookie = 'Cookie',
 	ContentType = 'Content-Type',
-	Authorization = 'Authorization'
+	Authorization = 'Authorization',
+	UserAgent = 'User-Agent'
 }
 
 type Request = {
@@ -31,166 +32,205 @@ type Request = {
 	params: object
 	url: string
 	path: string
-	auth_type: Auth
 	body_type: Body
 	oauth_token: OAuth2Token | null
+	axios: AxiosInstance
 }
 
 const myaxios = axios.create()
 
 export default class Http {
 
-	private config: Readonly<Request>
+	private readonly req: Readonly<Request>
 
-	private constructor(config?: Request) {
-		if (config) {
-			this.config = config
+	constructor(req?: Request) {
+		if (req) {
+			this.req = req
 		} else {
-			this.config = {
+			this.req = {
 				url: '',
 				path: '',
 				body: {},
 				params: {},
 				headers: {},
 
-				auth_type: Auth.NONE,
 				body_type: Body.NONE,
 				oauth_token: null,
+
+				axios: myaxios
 			}
 		}
 	}
 
-	url(url: string): Http {
-		let config = {...this.config}
-		config.url = url
-		return new Http(config)
+	static axios(axios: AxiosInstance): Http {
+		return new Http({
+			url: '',
+			path: '',
+			body: {},
+			params: {},
+			headers: {},
+
+			body_type: Body.NONE,
+			oauth_token: null,
+			axios
+		})
 	}
 
-	path(url: string): Http {
-		let config = {...this.config}
-		config.url = url
-		return new Http(config)
+	static url(url: string): Http {
+		return new Http({
+			url: url,
+			path: '',
+			body: {},
+			params: {},
+			headers: {},
+
+			body_type: Body.NONE,
+			oauth_token: null,
+			axios: myaxios
+		})
+	}
+
+	url(url: string): Http {
+		let req = {...this.req}
+		req.url = url
+		return new Http(req)
+	}
+
+	path(path: string): Http {
+		let req = {...this.req}
+		req.path = path
+		return new Http(req)
+	}
+
+	cookie(cookie: string): Http {
+		let req = {...this.req}
+		req.headers = {...{}, ...this.req.headers, ...{[H.Cookie]:cookie}}
+		return new Http(req)
+	}
+
+	user_agent(user_agent: string): Http {
+		let req = {...this.req}
+		req.headers = {...{}, ...this.req.headers, ...{[H.UserAgent]:user_agent}}
+		return new Http(req)
 	}
 
 	header(key: H | string, value: string): Http {
-		let config = {...this.config}
-		config.headers = {...{}, ...this.config.headers, ...{[key]:value}}
-		return new Http(config)
+		let req = {...this.req}
+		req.headers = {...{}, ...this.req.headers, ...{[key]:value}}
+		return new Http(req)
 	}
 
 	headers(headers: object): Http {
-		let config = {...this.config}
-		config.headers = {...{}, ...this.config.headers, ...headers}
-		return new Http(config)
+		let req = {...this.req}
+		req.headers = {...{}, ...this.req.headers, ...headers}
+		return new Http(req)
 	}
 
 	param(key: string, value: string): Http {
-		let config = {...this.config}
-		config.params = {...{}, ...this.config.params, ...{[key]:value}}
-		return new Http(config)
+		let req = {...this.req}
+		req.params = {...{}, ...this.req.params, ...{[key]:value}}
+		return new Http(req)
 	}
 
 	params<Form extends object>(params: Form): Http {
-		let config = {...this.config}
-		config.params = {...{}, ...this.config.params, ...params}
-		return new Http(config)
+		let req = {...this.req}
+		req.params = {...{}, ...this.req.params, ...params}
+		return new Http(req)
 	}
 
 	body_form(key: string, value: string): Http {
-		let config = {...this.config}
-		config.body_type = Body.FORM
-		config.headers = Object.assign(this.config.headers, {[H.ContentType]:'application/x-www-form-urlencoded'})
-		config.body = Object.assign(this.config.body, {[key]:value})
-		return new Http(config)
+		let req = {...this.req}
+		req.body_type = Body.FORM
+		req.headers = Object.assign(this.req.headers, {[H.ContentType]:'application/x-www-form-urlencoded'})
+		req.body = Object.assign(this.req.body, {[key]:value})
+		return new Http(req)
 	}
 
 	body_forms<Form extends object>(body: Form): Http {
-		let config = {...this.config}
-		config.body_type = Body.FORM
-		config.headers = Object.assign(this.config.headers, {[H.ContentType]:'application/x-www-form-urlencoded'})
-		config.body = Object.assign(this.config.body, body)
-		return new Http(config)
+		let req = {...this.req}
+		req.body_type = Body.FORM
+		req.headers = Object.assign(this.req.headers, {[H.ContentType]:'application/x-www-form-urlencoded'})
+		req.body = Object.assign(this.req.body, body)
+		return new Http(req)
 	}
 
 	body_json_(key: string, value: string): Http {
-		let config = {...this.config}
-		config.body_type = Body.JSON
-		// config._headers =
+		let req = {...this.req}
+		req.body_type = Body.JSON
+		// req._headers =
 		throw new Error('Not Implemented Yet')
-		config.body = Object.assign(this.config.body, {[key]:value})
-		return new Http(config)
+		req.body = Object.assign(this.req.body, {[key]:value})
+		return new Http(req)
 	}
 
 	body_json<Form extends object>(body: Form): Http {
-		let config = {...this.config}
-		config.body_type = Body.JSON
-		// config._headers =
+		let req = {...this.req}
+		req.body_type = Body.JSON
+		// req._headers =
 		throw new Error('Not Implemented Yet')
-		config.body = Object.assign(this.config.body, body)
-		return new Http(config)
+		req.body = Object.assign(this.req.body, body)
+		return new Http(req)
 	}
 
 	auth_basic(username: string, password: string): Http {
-		let config = {...this.config}
-		config.auth_type = Auth.BASIC
+		let req = {...this.req}
+		// req.auth_type = Auth.BASIC
 		const hash = Buffer.from(username + ':' + password).toString('base64')
-		config.headers = Object.assign(this.config.headers, {[H.Authorization]: `Basic ${hash}`})
-		return new Http(config)
+		req.headers = Object.assign(this.req.headers, {[H.Authorization]: `Basic ${hash}`})
+		return new Http(req)
 	}
 
 	auth_bearer(token: string): Http {
-		let config = {...this.config}
-		config.auth_type = Auth.BEARER
-		config.headers = Object.assign(this.config.headers, {[H.Authorization]: `Bearer ${token}`})
-		return new Http(config)
+		let req = {...this.req}
+		// req.auth_type = Auth.BEARER
+		req.headers = Object.assign(this.req.headers, {[H.Authorization]: `Bearer ${token}`})
+		return new Http(req)
 	}
 
 	auth_oauth2_password(token: OAuth2Token): Http {
-		let config = {...this.config}
-		config.auth_type = Auth.OAUTH2_PASSWORD
-		config.oauth_token = token
-		return new Http(config)
+		let req = {...this.req}
+		req.oauth_token = token
+		return new Http(req)
 	}
 
 	async get<Resp>(): Promise<AxiosResponse<Resp>> {
-		let config = {...this.config}
-		if (config.body_type != Body.NONE) {
+		let req = {...this.req}
+		if (req.body_type != Body.NONE) {
 			throw Error('Body is not allowed for GET')
 		}
-		if (config.oauth_token) {
-			let token = await config.oauth_token.async_access_token()
-			config.headers = Object.assign(this.config.headers, {[H.Authorization]: `Bearer ${token}`})
+		if (req.oauth_token) {
+			let token = await req.oauth_token.async_access_token()
+			req.headers = Object.assign(this.req.headers, {[H.Authorization]: `Bearer ${token}`})
 		}
 
-		return myaxios.get<Resp>(config.url,
-			{ params: config.params, headers: config.headers })
+		return myaxios.get<Resp>(req.url + req.path,
+			{ params: req.params, headers: req.headers })
 	}
 
 	async post<Resp>(): Promise<AxiosResponse<Resp>> {
-		let config = {...this.config}
+		let req = {...this.req}
 		let body
-		switch(config.body_type) {
+		switch(req.body_type) {
 			case Body.FORM:
 				// @ts-ignore
-				body = qs.stringify(config.body)
+				body = qs.stringify(req.body)
 				break
-			case Body.JSON: body = config.body
+			case Body.JSON: body = req.body
 				break
 			case Body.NONE: body = {}
 				break
 		}
-		if (config.oauth_token) {
-			let token = await config.oauth_token.async_access_token()
-			config.headers = Object.assign(this.config.headers, {[H.Authorization]: `Bearer ${token}`})
+		if (req.oauth_token) {
+			let token = await req.oauth_token.async_access_token()
+			req.headers = Object.assign(this.req.headers, {[H.Authorization]: `Bearer ${token}`})
 		}
 
-		return myaxios.post(config.url,
+		return myaxios.post(req.url + req.path,
 			body,
-			{ headers: config.headers })
+			{ headers: req.headers })
 	}
 }
 
 // DONE: Immutable HTTP classes
 // DONE: Immutable objects
-// TODO: .data(), .status_code(), .response()
 // TODO: Hard casting of object
