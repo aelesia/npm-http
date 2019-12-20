@@ -1,6 +1,6 @@
 import Http from './Http'
-import {Time} from './Time'
 import {rethrow} from './Control'
+import {DateUtil, StringUtil} from "@aelesia/commons"
 
 type Token = {
 	access_token:  string;
@@ -49,7 +49,7 @@ export class OAuth2Token{
 			throw Error(`Invalid token - ${JSON.stringify(data)}`)
 		}
 
-		this.token = {...data, ...{expires_on: Time.add(data.expires_in)}}
+		this.token = {...data, ...{expires_on: DateUtil.add(data.expires_in * 1000)}}
 
 	} catch(e) {
 		//@ts-ignore
@@ -61,11 +61,11 @@ export class OAuth2Token{
 			console.log('No token')
 			await this.refresh_token()
 		}
-		else if (Time.is_after(this.token.expires_on)) {
+		else if (DateUtil.has_passed(this.token.expires_on)) {
 			console.log('Token expired')
 			await this.refresh_token()
 		}
-		else if (Time.elapsed(this.token.expires_on) > this.token.expires_in*0.9) {
+		else if (DateUtil.elapsed(this.token.expires_on) > this.token.expires_in*0.9) {
 			console.log('Token expiring soon')
 			this.refresh_token()
 				.then(()=>{})
