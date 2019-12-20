@@ -1,6 +1,6 @@
 import Http from './Http'
 import {Time} from './Time'
-import {rethrow} from './Control';
+import {rethrow} from './Control'
 
 type Token = {
 	access_token:  string;
@@ -32,6 +32,7 @@ export class OAuth2Token{
 		await this.refresh_token()
 	}
 
+	// FIXME: Shouldn't be void function
 	async refresh_token(): Promise<void> { try {
 		console.log('[OAuth2Token] Refreshing Token')
 		let data = (await Http.url(this.config.access_token_url)
@@ -66,26 +67,26 @@ export class OAuth2Token{
 		}
 		else if (Time.elapsed(this.token.expires_on) > this.token.expires_in*0.9) {
 			console.log('Token expiring soon')
-			this.refresh_token().then(async ()=>{
-				await this.refresh_token()
-			})
+			this.refresh_token()
+				.then(()=>{})
+				.catch(()=>{})
 		}
 		return this.token.access_token
 	}
 
-	access_token(): string {
-		if (!this.token) {
-			this.refresh_token()
-			throw Error('Access token not yet initialized. Did you forget to call Token.init()?')
-		}
-
-		if (Time.is_after(this.token.expires_on)) {
-			this.refresh_token()
-			throw Error('Access token has expired.')
-		} else if (Time.elapsed(this.token.expires_on) > this.token.expires_in*0.9) {
-			this.refresh_token()
-		}
-
-		return this.token.access_token
-	}
+	// access_token(): string {
+	// 	if (!this.token) {
+	// 		this.refresh_token()
+	// 		throw Error('Access token not yet initialized. Did you forget to call Token.init()?')
+	// 	}
+	//
+	// 	if (Time.is_after(this.token.expires_on)) {
+	// 		this.refresh_token()
+	// 		throw Error('Access token has expired.')
+	// 	} else if (Time.elapsed(this.token.expires_on) > this.token.expires_in*0.9) {
+	// 		this.refresh_token()
+	// 	}
+	//
+	// 	return this.token.access_token
+	// }
 }
