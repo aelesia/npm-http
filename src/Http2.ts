@@ -208,28 +208,58 @@ export default class Http {
 	}
 
 	async post<Resp>(): Promise<AxiosResponse<Resp>> {
-		let req = {...this.req}
-		let body
+		let req: Request = await Http.preprocess(this)
+
+		return myaxios.post(req.url + req.path,
+			req.body,
+			{ headers: req.headers })
+	}
+
+
+	async put<Resp>(): Promise<AxiosResponse<Resp>> {
+		let req: Request = await Http.preprocess(this)
+
+		return myaxios.put(req.url + req.path,
+			req.body,
+			{ headers: req.headers })
+	}
+
+	async patch<Resp>(): Promise<AxiosResponse<Resp>> {
+		let req: Request = await Http.preprocess(this)
+
+		return myaxios.patch(req.url + req.path,
+			req.body,
+			{ headers: req.headers })
+	}
+
+	async delete<Resp>(): Promise<AxiosResponse<Resp>> {
+		let req: Request = await Http.preprocess(this)
+		if (req.body_type != Body.NONE) {
+			throw Error('Body is not allowed for DELETE')
+		}
+
+		return myaxios.delete<Resp>(req.url + req.path,
+			{ params: req.params, headers: req.headers })
+	}
+
+	static async preprocess(http: Http): Promise<Request> {
+		let req = {...http.req}
 		switch(req.body_type) {
 			case Body.FORM:
 				// @ts-ignore
 				body = qs.stringify(req.body)
 				break
-			case Body.JSON: body = req.body
-				break
-			case Body.NONE: body = {}
-				break
+			default: break
 		}
 		if (req.oauth_token) {
 			let token = await req.oauth_token.async_access_token()
-			req.headers = Object.assign(this.req.headers, {[H.Authorization]: `Bearer ${token}`})
+			req.headers = Object.assign(http.req.headers, {[H.Authorization]: `Bearer ${token}`})
 		}
-
-		return myaxios.post(req.url + req.path,
-			body,
-			{ headers: req.headers })
+		return req
 	}
 }
+
+
 
 // DONE: Immutable HTTP classes
 // DONE: Immutable objects
