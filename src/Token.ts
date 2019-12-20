@@ -73,20 +73,4 @@ export class OAuth2Token{
 		}
 		return this.token.access_token
 	}
-
-	// access_token(): string {
-	// 	if (!this.token) {
-	// 		this.refresh_token()
-	// 		throw Error('Access token not yet initialized. Did you forget to call Token.init()?')
-	// 	}
-	//
-	// 	if (Time.is_after(this.token.expires_on)) {
-	// 		this.refresh_token()
-	// 		throw Error('Access token has expired.')
-	// 	} else if (Time.elapsed(this.token.expires_on) > this.token.expires_in*0.9) {
-	// 		this.refresh_token()
-	// 	}
-	//
-	// 	return this.token.access_token
-	// }
 }
