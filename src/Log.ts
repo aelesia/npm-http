@@ -1,4 +1,4 @@
-export default new class LogStream {
+export default new class Log {
 
 	private _stream?: (log: string)=>void
 

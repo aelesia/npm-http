@@ -94,3 +94,9 @@
             key2: 'value2',
             key3: 'value3'
         })
+
+# Pipe logs
+
+    import {Log as HttpLog} from '@aelesia/http'
+    
+    HttpLog.stream = (log) => { console.info(log) }

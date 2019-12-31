@@ -1,7 +1,6 @@
 import axios, {AxiosError, AxiosInstance, AxiosPromise, AxiosResponse} from 'axios'
 import qs from 'querystring'
 import {OAuth2Token} from './Token'
-import LogStream from './LogStream'
 
 // TODO: Immutability
 // TODO: Logging
