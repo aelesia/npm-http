@@ -1,6 +1,7 @@
 import Http from './Http'
 import {rethrow} from './Control'
-import {DateUtil, StringUtil} from "@aelesia/commons"
+import {DateUtil, StringUtil} from '@aelesia/commons'
+import LogStream from './LogStream'
 
 type Token = {
 	access_token:  string;
@@ -34,7 +35,7 @@ export class OAuth2Token{
 
 	// FIXME: Shouldn't be void function
 	async refresh_token(): Promise<void> { try {
-		console.log('[OAuth2Token] Refreshing Token')
+		LogStream.info('[OAuth2Token] Refreshing Token')
 		let data = (await Http.url(this.config.access_token_url)
 			.auth_basic(this.config.client_id, this.config.client_secret)
 			.body_forms({
@@ -58,15 +59,15 @@ export class OAuth2Token{
 
 	async async_access_token(): Promise<string> {
 		if (!this.token) {
-			console.log('No token')
+			LogStream.info('No token')
 			await this.refresh_token()
 		}
 		else if (DateUtil.has_passed(this.token.expires_on)) {
-			console.log('Token expired')
+			LogStream.info('Token expired')
 			await this.refresh_token()
 		}
 		else if (DateUtil.elapsed(this.token.expires_on) > this.token.expires_in*0.9) {
-			console.log('Token expiring soon')
+			LogStream.info('Token expiring soon')
 			this.refresh_token()
 				.then(()=>{})
 				.catch(()=>{})

@@ -1,6 +1,10 @@
 import axios, {AxiosError, AxiosInstance, AxiosPromise, AxiosResponse} from 'axios'
 import qs from 'querystring'
 import {OAuth2Token} from './Token'
+import LogStream from './LogStream'
+
+// TODO: Immutability
+// TODO: Logging
 
 enum Auth {
 	NONE,
@@ -16,213 +20,248 @@ enum Body {
 	JSON
 }
 
-
 export enum H {
 	Cookie = 'Cookie',
 	ContentType = 'Content-Type',
-	Authorization = 'Authorization'
+	Authorization = 'Authorization',
+	UserAgent = 'User-Agent'
+}
+
+type Request = {
+	body: object
+	headers: object
+	params: object
+	url: string
+	path: string
+	body_type: Body
+	oauth_token: OAuth2Token | null
+	axios: AxiosInstance
 }
 
 const myaxios = axios.create()
 
 export default class Http {
 
-	private _url: string
-	private _headers: object = {}
-	private _params: object = {}
-	private _body: object = {}
+	private readonly req: Readonly<Request>
 
-	private _auth_type: Auth = Auth.NONE
-	private _body_type: Body = Body.NONE
-	private _oauth_token: OAuth2Token | null = null
-	public axios: AxiosInstance = myaxios
+	constructor(req?: Request) {
+		if (req) {
+			this.req = req
+		} else {
+			this.req = {
+				url: '',
+				path: '',
+				body: {},
+				params: {},
+				headers: {},
 
-	private constructor(url: string) {
-		this._url = url
-	}
+				body_type: Body.NONE,
+				oauth_token: null,
 
-	static url(url: string, axios_instance?: AxiosInstance): Http {
-		let http =  new Http(url)
-		if (axios_instance) {
-			http.axios = axios_instance
+				axios: myaxios
+			}
 		}
-		return http
 	}
 
-	private clone(): Http {
-		let http = new Http(this._url)
-		http._headers = this._headers
-		http._params = this._params
-		http._body = this._body
-		http._auth_type = this._auth_type
-		http._body_type = this._body_type
-		http._oauth_token = this._oauth_token
-		http.axios = this.axios
-		return http
+	static axios(axios: AxiosInstance): Http {
+		return new Http({
+			url: '',
+			path: '',
+			body: {},
+			params: {},
+			headers: {},
+
+			body_type: Body.NONE,
+			oauth_token: null,
+			axios
+		})
+	}
+
+	static url(url: string): Http {
+		return new Http({
+			url: url,
+			path: '',
+			body: {},
+			params: {},
+			headers: {},
+
+			body_type: Body.NONE,
+			oauth_token: null,
+			axios: myaxios
+		})
 	}
 
 	url(url: string): Http {
-		this._url = url
-		return this
+		let req = {...this.req}
+		req.url = url
+		return new Http(req)
 	}
 
-	private set _content_type(body: Body) {
-		switch (body) {
-			case Body.FORM: this._headers = {...{}, ...this._headers, ...{[H.ContentType]:'application/x-www-form-urlencoded'}}
-				break
-			case Body.JSON: throw Error('NotImplementedException')
-		}
+	path(path: string): Http {
+		let req = {...this.req}
+		req.path = path
+		return new Http(req)
 	}
 
 	cookie(cookie: string): Http {
-		let http = this.clone()
-		http._headers = {...{}, ...http._headers, ...{[H.Cookie]:cookie}}
-		return http
+		let req = {...this.req}
+		req.headers = {...{}, ...this.req.headers, ...{[H.Cookie]:cookie}}
+		return new Http(req)
+	}
+
+	user_agent(user_agent: string): Http {
+		let req = {...this.req}
+		req.headers = {...{}, ...this.req.headers, ...{[H.UserAgent]:user_agent}}
+		return new Http(req)
 	}
 
 	header(key: H | string, value: string): Http {
-		let http = this.clone()
-		http._headers = {...{}, ...http._headers, ...{[key]:value}}
-		return http
+		let req = {...this.req}
+		req.headers = {...{}, ...this.req.headers, ...{[key]:value}}
+		return new Http(req)
 	}
 
 	headers(headers: object): Http {
-		let http = this.clone()
-		http._headers = {...{}, ...http._headers, ...headers}
-		return http
+		let req = {...this.req}
+		req.headers = {...{}, ...this.req.headers, ...headers}
+		return new Http(req)
 	}
 
 	param(key: string, value: string): Http {
-		let http = this.clone()
-		http._params = {...{}, ...http._params, ...{[key]:value}}
-		return http
+		let req = {...this.req}
+		req.params = {...{}, ...this.req.params, ...{[key]:value}}
+		return new Http(req)
 	}
 
 	params<Form extends object>(params: Form): Http {
-		let http = this.clone()
-		http._params = {...{}, ...http._params, ...params}
-		return http
+		let req = {...this.req}
+		req.params = {...{}, ...this.req.params, ...params}
+		return new Http(req)
 	}
 
 	body_form(key: string, value: string): Http {
-		let http = this.clone()
-		http._body_type = Body.FORM
-		http._content_type = Body.FORM
-		http._body = {...{}, ...http._body, ...{[key]:value}}
-		return http
+		let req = {...this.req}
+		req.body_type = Body.FORM
+		req.headers = Object.assign(this.req.headers, {[H.ContentType]:'application/x-www-form-urlencoded'})
+		req.body = Object.assign(this.req.body, {[key]:value})
+		return new Http(req)
 	}
 
 	body_forms<Form extends object>(body: Form): Http {
-		let http = this.clone()
-		http._body_type = Body.FORM
-		http._content_type = Body.FORM
-		http._body = {...{}, ...http._body, ...body}
-		return http
+		let req = {...this.req}
+		req.body_type = Body.FORM
+		req.headers = Object.assign(this.req.headers, {[H.ContentType]:'application/x-www-form-urlencoded'})
+		req.body = Object.assign(this.req.body, body)
+		return new Http(req)
 	}
 
 	body_json_(key: string, value: string): Http {
-		let http = this.clone()
-		http._body_type = Body.JSON
-		http._content_type = Body.JSON
-		http._body = {...{}, ...http._body, ...{[key]:value}}
-		return http
+		let req = {...this.req}
+		req.body_type = Body.JSON
+		// req._headers =
+		throw new Error('Not Implemented Yet')
+		req.body = Object.assign(this.req.body, {[key]:value})
+		return new Http(req)
 	}
 
 	body_json<Form extends object>(body: Form): Http {
-		let http = this.clone()
-		http._body_type = Body.JSON
-		http._content_type = Body.JSON
-		http._body = {...{}, ...http._body, ...body}
-		return http
+		let req = {...this.req}
+		req.body_type = Body.JSON
+		// req._headers =
+		throw new Error('Not Implemented Yet')
+		req.body = Object.assign(this.req.body, body)
+		return new Http(req)
 	}
 
 	auth_basic(username: string, password: string): Http {
-		let http = this.clone()
-		http._auth_type = Auth.BASIC
+		let req = {...this.req}
+		// req.auth_type = Auth.BASIC
 		const hash = Buffer.from(username + ':' + password).toString('base64')
-		return http.header(H.Authorization, `Basic ${hash}`)
-		// TODO: Doesn't conform
+		req.headers = Object.assign(this.req.headers, {[H.Authorization]: `Basic ${hash}`})
+		return new Http(req)
 	}
 
 	auth_bearer(token: string): Http {
-		let http = this.clone()
-		http._auth_type = Auth.BEARER
-		return http.header(H.Authorization, `Bearer ${token}`)
-		// TODO: Doesn't conform
+		let req = {...this.req}
+		// req.auth_type = Auth.BEARER
+		req.headers = Object.assign(this.req.headers, {[H.Authorization]: `Bearer ${token}`})
+		return new Http(req)
 	}
 
 	auth_oauth2_password(token: OAuth2Token): Http {
-		let http = this.clone()
-		http._auth_type = Auth.OAUTH2_PASSWORD
-		http._oauth_token = token
-		return http
+		let req = {...this.req}
+		req.oauth_token = token
+		return new Http(req)
 	}
 
-	// get<Resp>(): AxiosPromise<Resp> {
-	// 	if (this._body_type != Body.NONE) {
-	// 		throw Error('Body is not allowed for GET')
-	// 	}
-	//
-	// 	return myaxios.get(this._url,
-	// 		{ params: this._params, headers: this._headers })
-	// }
-
 	async get<Resp>(): Promise<AxiosResponse<Resp>> {
-		let http = this.clone()
-		if (http._body_type != Body.NONE) {
+		let req = {...this.req}
+		if (req.body_type != Body.NONE) {
 			throw Error('Body is not allowed for GET')
 		}
-		if (http._oauth_token) {
-			http = http.auth_bearer(await http._oauth_token.async_access_token())
+		if (req.oauth_token) {
+			let token = await req.oauth_token.async_access_token()
+			req.headers = Object.assign(this.req.headers, {[H.Authorization]: `Bearer ${token}`})
 		}
 
-		return myaxios.get<Resp>(http._url,
-			{ params: http._params, headers: http._headers })
+		return myaxios.get<Resp>(req.url + req.path,
+			{ params: req.params, headers: req.headers })
 	}
 
 	async post<Resp>(): Promise<AxiosResponse<Resp>> {
-		let http = this.clone()
-		let body
-		switch(this._body_type) {
+		let req: Request = await Http.preprocess(this)
+
+		return myaxios.post(req.url + req.path,
+			req.body,
+			{ headers: req.headers })
+	}
+
+
+	async put<Resp>(): Promise<AxiosResponse<Resp>> {
+		let req: Request = await Http.preprocess(this)
+
+		return myaxios.put(req.url + req.path,
+			req.body,
+			{ headers: req.headers })
+	}
+
+	async patch<Resp>(): Promise<AxiosResponse<Resp>> {
+		let req: Request = await Http.preprocess(this)
+
+		return myaxios.patch(req.url + req.path,
+			req.body,
+			{ headers: req.headers })
+	}
+
+	async delete<Resp>(): Promise<AxiosResponse<Resp>> {
+		let req: Request = await Http.preprocess(this)
+		if (req.body_type != Body.NONE) {
+			throw Error('Body is not allowed for DELETE')
+		}
+
+		return myaxios.delete<Resp>(req.url + req.path,
+			{ params: req.params, headers: req.headers })
+	}
+
+	static async preprocess(http: Http): Promise<Request> {
+		let req = {...http.req}
+		switch(req.body_type) {
 			case Body.FORM:
 				// @ts-ignore
-				body = qs.stringify(this._body)
+				req.body = qs.stringify(req.body)
 				break
-			case Body.JSON: body = this._body
-				break
-			case Body.NONE: body = {}
-				break
+			default: break
 		}
-
-		if (http._oauth_token) {
-			http = http.auth_bearer(await http._oauth_token.async_access_token())
+		if (req.oauth_token) {
+			let token = await req.oauth_token.async_access_token()
+			req.headers = Object.assign(http.req.headers, {[H.Authorization]: `Bearer ${token}`})
 		}
-
-		return myaxios.post(http._url,
-			body,
-			{ headers: http._headers })
-	}
-
-	static before(func: (config: any)=>any) {
-		myaxios.interceptors.request.use(function (config: any) {
-			func(config)
-			return config
-		}, function (e: Error) {
-			return Promise.reject(e)
-		})
-	}
-
-	static after(func: (response: any)=>any) {
-		myaxios.interceptors.response.use(function (response: any) {
-			func(response)
-			return response
-		}, function (e: Error) {
-			return Promise.reject(e)
-		})
+		return req
 	}
 }
 
+
+
 // DONE: Immutable HTTP classes
 // DONE: Immutable objects
-// TODO: .data(), .status_code(), .response()
 // TODO: Hard casting of object
