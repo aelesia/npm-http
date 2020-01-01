@@ -36,6 +36,9 @@ https://medium.com/cameron-nokes/the-30-second-guide-to-publishing-a-typescript-
 ### Link module from another project
     npm link @aelesia/http
 
-## Publishing
+# NPM
 
+    npm login
+    npm logout
     npm publish
+    npm publish --tag develop
