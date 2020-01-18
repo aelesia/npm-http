@@ -6,3 +6,11 @@ TODO:
 - O2A better logging
 - Unit tests
 - O2A other flows
+
+# Decisions
+
+1) Consider dropping non JSON support for Auth, Headers & Body
+
+# TODO
+
+1) Write unit tests
