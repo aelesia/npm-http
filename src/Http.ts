@@ -137,6 +137,9 @@ export default class Http {
     return new Http(req)
   }
 
+  /**
+   * @deprecated
+   */
   body_form(key: string, value: string): Http {
     let req = { ...this.req }
     req.body_type = Body.FORM
@@ -153,11 +156,13 @@ export default class Http {
     return new Http(req)
   }
 
+  /**
+   * @deprecated
+   */
   body_json_(key: string, value: string): Http {
     let req = { ...this.req }
     req.body_type = Body.JSON
-    // req._headers =
-    throw new Error('Not Implemented Yet')
+    req.headers = Object.assign(this.req.headers, { [H.ContentType]: 'application/json' })
     req.body = Object.assign(this.req.body, { [key]: value })
     return new Http(req)
   }
@@ -165,8 +170,7 @@ export default class Http {
   body_json<Form extends object>(body: Form): Http {
     let req = { ...this.req }
     req.body_type = Body.JSON
-    // req._headers =
-    throw new Error('Not Implemented Yet')
+    req.headers = Object.assign(this.req.headers, { [H.ContentType]: 'application/json' })
     req.body = Object.assign(this.req.body, body)
     return new Http(req)
   }
@@ -202,25 +206,25 @@ export default class Http {
       req.headers = Object.assign(this.req.headers, { [H.Authorization]: `Bearer ${token}` })
     }
 
-    return myaxios.get<Resp>(req.url + req.path, { params: req.params, headers: req.headers })
+    return req.axios.get<Resp>(req.url + req.path, { params: req.params, headers: req.headers })
   }
 
   async post<Resp>(): Promise<AxiosResponse<Resp>> {
     let req: Request = await Http.preprocess(this)
 
-    return myaxios.post(req.url + req.path, req.body, { headers: req.headers })
+    return req.axios.post(req.url + req.path, req.body, { headers: req.headers })
   }
 
   async put<Resp>(): Promise<AxiosResponse<Resp>> {
     let req: Request = await Http.preprocess(this)
 
-    return myaxios.put(req.url + req.path, req.body, { headers: req.headers })
+    return req.axios.put(req.url + req.path, req.body, { headers: req.headers })
   }
 
   async patch<Resp>(): Promise<AxiosResponse<Resp>> {
     let req: Request = await Http.preprocess(this)
 
-    return myaxios.patch(req.url + req.path, req.body, { headers: req.headers })
+    return req.axios.patch(req.url + req.path, req.body, { headers: req.headers })
   }
 
   async delete<Resp>(): Promise<AxiosResponse<Resp>> {
@@ -229,7 +233,7 @@ export default class Http {
       throw Error('Body is not allowed for DELETE')
     }
 
-    return myaxios.delete<Resp>(req.url + req.path, { params: req.params, headers: req.headers })
+    return req.axios.delete<Resp>(req.url + req.path, { params: req.params, headers: req.headers })
   }
 
   static async preprocess(http: Http): Promise<Request> {

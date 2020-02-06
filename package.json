@@ -1,6 +1,6 @@
 {
   "name": "httyp",
-  "version": "0.1.7",
+  "version": "0.2.0",
   "description": "Simplified wrapper for HTTP calls",
   "author": "aelesia",
   "license": "MIT",
