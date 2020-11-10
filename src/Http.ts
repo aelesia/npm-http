@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios'
-import qs from 'querystring'
+import * as qs from 'querystring'
 import { OAuth2Token } from './Token'
 
 // TODO: Immutability
