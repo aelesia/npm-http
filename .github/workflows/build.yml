@@ -49,3 +49,5 @@ jobs:
           commit_message: Deploy
           repository: base
           branch: 'build'
+          skip_checkout: true
+          push_options: '--force'
