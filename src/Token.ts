@@ -53,7 +53,7 @@ export class OAuth2Token {
 
       this.token = { ...data, ...{ expires_on: DateUtil.add(data.expires_in * 1000) } }
     } catch (e) {
-      rethrow(new Error('Unable to obtain O2A token'), e)
+      rethrow(new Error('Unable to obtain O2A token'), e instanceof Error ? e : new Error(String(e)))
     }
   }
 
